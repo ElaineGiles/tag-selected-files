@@ -661,6 +661,15 @@ export default function TagSelectedFiles() {
                       icon={isActive ? Icon.Minus : Icon.Tag}
                       onAction={() => handleToggleTag(tag.name)}
                     />
+                    {hasAnyTags && (
+                      <Action
+                        title="Remove All Tags"
+                        icon={Icon.Trash}
+                        style={Action.Style.Destructive}
+                        shortcut={{ modifiers: ["ctrl"], key: "x" }}
+                        onAction={handleRemoveAllTags}
+                      />
+                    )}
                   </ActionPanel>
                 }
               />
@@ -681,6 +690,7 @@ export default function TagSelectedFiles() {
                   title="Remove All Tags"
                   icon={Icon.Trash}
                   style={Action.Style.Destructive}
+                  shortcut={{ modifiers: ["ctrl"], key: "x" }}
                   onAction={handleRemoveAllTags}
                 />
               </ActionPanel>
