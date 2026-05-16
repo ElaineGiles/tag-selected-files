@@ -11,7 +11,7 @@ import {
   LaunchProps,
 } from "@raycast/api";
 import { execSync } from "child_process";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   TagItem,
   ViewLaunchContext,
@@ -21,6 +21,7 @@ import {
   REMOVE_ALL_TAGS_PYTHON,
   READ_TAGS_PYTHON,
   runPythonScript,
+  runPythonScriptAsync,
   refreshForkLift,
   getFavoriteTags,
 } from "./shared";
@@ -31,14 +32,20 @@ import {
 export default function TagFilesView(props: LaunchProps<{ launchContext?: ViewLaunchContext }>) {
   const context = props.launchContext;
 
-  const [searchText, setSearchText] = useState("");
-  const [fileTags, setFileTags] = useState<Record<string, string[]>>(
-    context?.initialFileTags ?? {}
-  );
-  const [favoriteTags] = useState<TagItem[]>(getFavoriteTags);
-
   const files = context?.files ?? [];
   const source = context?.source ?? null;
+
+  const [searchText, setSearchText] = useState("");
+  const [fileTags, setFileTags] = useState<Record<string, string[]>>({});
+  const [favoriteTags] = useState<TagItem[]>(getFavoriteTags);
+
+  // Load checkmarks silently after the view opens — no spinner shown.
+  useEffect(() => {
+    if (files.length === 0) return;
+    runPythonScriptAsync(READ_TAGS_PYTHON, [JSON.stringify(files)])
+      .then((json) => setFileTags(JSON.parse(json)))
+      .catch(() => { /* checkmarks just won't show, everything else works */ });
+  }, []);
 
   // If launched directly (not via the launcher), show HUD and exit
   useEffect(() => {
@@ -100,15 +107,6 @@ export default function TagFilesView(props: LaunchProps<{ launchContext?: ViewLa
         return next;
       });
 
-      // Verify by re-reading xattr
-      let verifyMsg = "";
-      try {
-        const verifyJson = runPythonScript(READ_TAGS_PYTHON, [JSON.stringify(files)]);
-        const verifyTags: Record<string, string[]> = JSON.parse(verifyJson);
-        const sample = files[0] ? (verifyTags[files[0]] ?? []) : [];
-        verifyMsg = `xattr now: [${sample.join(", ")}]`;
-      } catch { verifyMsg = "verify failed"; }
-
       if (source === "ForkLift") {
         if (removing) {
           const file = files[0];
@@ -131,7 +129,6 @@ export default function TagFilesView(props: LaunchProps<{ launchContext?: ViewLa
       toast.title = removing
         ? `Removed "${tag}" from ${files.length} file${files.length !== 1 ? "s" : ""}`
         : `Applied "${tag}" to ${files.length} file${files.length !== 1 ? "s" : ""}`;
-      toast.message = verifyMsg;
     } catch (err) {
       toast.style = Toast.Style.Failure;
       toast.title = "Failed";

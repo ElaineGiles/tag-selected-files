@@ -17,7 +17,6 @@ export interface TagItem {
 export interface ViewLaunchContext {
   files: string[];
   source: "Finder" | "ForkLift" | null;
-  initialFileTags: Record<string, string[]>;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -169,6 +168,18 @@ export function runPythonScript(script: string, args: string[]): string {
       throw new Error(result.stderr?.trim() || "Unknown error");
     }
     return result.stdout ?? "";
+  } finally {
+    try { unlinkSync(scriptPath); } catch { /* ignore */ }
+  }
+}
+
+// Async version — non-blocking, safe to call from a no-view launcher.
+export async function runPythonScriptAsync(script: string, args: string[]): Promise<string> {
+  const scriptPath = join(tmpdir(), `raycast-tag-${Date.now()}.py`);
+  writeFileSync(scriptPath, script);
+  try {
+    const { stdout } = await execFileAsync("python3", [scriptPath, ...args], { timeout: 10000 });
+    return stdout ?? "";
   } finally {
     try { unlinkSync(scriptPath); } catch { /* ignore */ }
   }
