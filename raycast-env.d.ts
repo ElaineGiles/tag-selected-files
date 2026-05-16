@@ -15,10 +15,14 @@ declare type Preferences = ExtensionPreferences
 declare namespace Preferences {
   /** Preferences accessible in the `tag-selected-files` command */
   export type TagSelectedFiles = ExtensionPreferences & {}
+  /** Preferences accessible in the `tag-files-view` command */
+  export type TagFilesView = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
   /** Arguments passed to the `tag-selected-files` command */
   export type TagSelectedFiles = {}
+  /** Arguments passed to the `tag-files-view` command */
+  export type TagFilesView = {}
 }
 
